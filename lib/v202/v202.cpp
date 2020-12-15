@@ -92,9 +92,9 @@ void v202::command(uint8_t throttle, int8_t yaw, int8_t pitch, int8_t roll, uint
     mFrame[0] = throttle;    // T
     mFrame[1] = yaw;         // A
     mFrame[2] = pitch;       // E
-    mFrame[3] = roll;        // R
+    mFrame[3] = 0x00;        // R
     // Trims, middle is 0x40
-    mFrame[4] = 0x40; // yaw
+    mFrame[4] = roll; // yaw
     mFrame[5] = 0x40; // pitch
     mFrame[6] = 0x40; // roll
   }
@@ -277,7 +277,6 @@ uint8_t v202::run( rx_values_t *rx_value )
       else 
       {
         mWireless->resetRxFlag();
-        bool bFrameOk = false;
         while ( !mWireless->rxEmpty() )
         {
           mWireless->readPayload(mFrame, 16);

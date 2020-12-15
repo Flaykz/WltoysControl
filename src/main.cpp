@@ -17,19 +17,51 @@ char steer_key = 0;
 char data = 0;
 char prev_data = 0;
 bool do_steer = false;
+bool do_throttle = false;
 uint8_t gear = 1;
 uint8_t steering_step = 2;
 uint8_t throttle_step = 2;
 uint8_t gear_step = 26;
 uint8_t max_gear = 127 / gear_step;
-uint8_t steering_trim = 124;
+uint8_t max_throttle = gear * gear_step;
+uint8_t steering_trim = 80;
 uint8_t state[3] = {0, 0};
+uint8_t throttle_history = 0;
+unsigned long prev_steering_time = 0;
+unsigned long prev_throttle_time = 0;
+unsigned long steering_time = 200;
+unsigned long time_between_steering_step = steering_time / (127 / steering_step);
+unsigned long throttle_time = 1000;
+unsigned long time_between_throttle_step = throttle_time / (127 / steering_step);
 
 void get_next_steer() {
   if (state[1] < 128) {
     state[1] = (state[1] + steering_step) < 128 ? state[1] + steering_step : 127;
   } else {
     state[1] = (state[1] + steering_step) < 256 ? state[1] + steering_step : 255;
+  }
+}
+
+void get_next_throttle()
+{
+  if (state[0] < 128)
+  {
+    if (do_throttle) {
+      max_throttle = gear * gear_step;
+      state[0] = (state[0] + throttle_step) < max_throttle ? state[0] + throttle_step : max_throttle;
+      throttle_history = state[0];
+    } else {
+      if (throttle_history >= throttle_step) {
+        throttle_history -= throttle_step;
+      }
+    }
+  }
+  else
+  {
+    if (do_throttle) {
+      max_throttle = (gear * gear_step) + 128;
+      state[1] = (state[0] + throttle_step) < max_throttle ? state[0] + throttle_step : max_throttle;
+    }
   }
 }
 
@@ -61,11 +93,13 @@ void loop()
     }
     if (data == 'z')
     {
-      state[0] = (gear_step * gear) > 127 ? 127 : gear_step * gear;
+      state[0] = throttle_history;
+      do_throttle = true;
     }
     else if (data == 's')
     {
-      state[0] = (128 + (gear_step * gear)) > 255 ? 255 : 128 + (gear_step * gear);
+      state[0] = 128;
+      do_throttle = true;
     }
     else if (data == 'd')
     {
@@ -82,10 +116,12 @@ void loop()
     else if (data == 't')
     {
       state[0] = 0;
+      do_throttle = false;
     }
     else if (data == 'g')
     {
       state[0] = 0;
+      do_throttle = false;
     }
     else if (data == 'h')
     {
@@ -127,14 +163,14 @@ void loop()
         }
       }
     }
-    else if (data == 'j')
+    else if (data == 'l')
     {
       if (steering_trim >= 10)
       {
         steering_trim -= 2;
       }
     }
-    else if (data == 'l')
+    else if (data == 'j')
     {
       if (steering_trim <= 245)
       {
@@ -143,9 +179,15 @@ void loop()
     }
   }
 
-  if (do_steer)
+  if (do_steer && ((millis() - prev_steering_time) >= time_between_steering_step))
   {
+    prev_steering_time = millis();
     get_next_steer();
+  }
+  if ((millis() - prev_throttle_time) >= time_between_throttle_step)
+  {
+    prev_throttle_time = millis();
+    get_next_throttle();
   }
   protocol.process(state[1], state[0], steering_trim);
 
