@@ -13,7 +13,7 @@ typedef struct __attribute__((__packed__)) {
   uint8_t crc;
 } rx_values_t;
 
-enum mode
+enum modet
 {
   RX_MODE = 0,
   TX_MODE
