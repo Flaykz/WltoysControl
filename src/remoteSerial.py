@@ -5,10 +5,8 @@ import serial
 from pynput.keyboard import Listener
 
 prev_steering_key = None
-serialPort = serial.Serial(port="COM7", baudrate=115200, bytesize=8, timeout=2, stopbits=serial.STOPBITS_ONE)
+serialPort = serial.Serial(port="COM3", baudrate=115200, bytesize=8, timeout=2, stopbits=serial.STOPBITS_ONE)
 PREV_KEY = None
-
-print("LAUNCH")
 
 
 def on_press(key):
@@ -48,6 +46,14 @@ def on_press(key):
             PREV_KEY = key
         prev_steering_key = key
         serialPort.write(key.encode())
+        print(key)
+        return
+    if key == "a":
+        serialPort.write("a".encode())
+        print(key)
+        return
+    if key == "e":
+        serialPort.write("e".encode())
         print(key)
         return
     if key == "Key.up":
@@ -120,19 +126,19 @@ def f_a():
     global exitProgram
     exitProgram = True
 
+
 def f_b():
     prev_time = int(round(time.time() * 1000))
     while True:
         global exitProgram
         if exitProgram:
             break
-        bytesToRead = serialPort.inWaiting()
-        if bytesToRead and (int(round(time.time() * 1000)) - prev_time > 100):
-            bloc = serialPort.read(bytesToRead)
-            last = bloc.split('\n').pop(0)
+        bytes_to_read = serialPort.inWaiting()
+        if bytes_to_read and (int(round(time.time() * 1000)) - prev_time > 100):
+            bloc = serialPort.read(bytes_to_read)
+            last = bloc.decode("utf-8") .split("\n").pop(0)
             print(last)
             prev_time = int(round(time.time() * 1000))
-
 
 
 if __name__ == "__main__":

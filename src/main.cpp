@@ -6,6 +6,9 @@
 
 #define BAUDRATE 115200
 
+#define MAX_VALUE 127
+#define MIN_THROTTLE_TIME 800
+
 nRF24 wireless;
 v202 protocol;
 
@@ -18,10 +21,11 @@ char prev_data = 0;
 bool do_steer = false;
 bool do_throttle = false;
 uint8_t gear = 1;
+uint8_t gear_step = 9;
 uint8_t steering_step = 2;
 uint8_t throttle_step = 2;
-uint8_t gear_step = 26;
-uint8_t max_gear = 127 / gear_step;
+uint8_t throttle_time_step = 100;
+uint8_t max_gear = MAX_VALUE / gear_step;
 uint8_t max_throttle = gear * gear_step;
 uint8_t steering_trim = 80;
 uint8_t state[3] = {0, 0};
@@ -29,20 +33,20 @@ uint8_t throttle_history = 0;
 unsigned long prev_steering_time = 0;
 unsigned long prev_throttle_time = 0;
 unsigned long steering_time = 200;
-unsigned long time_between_steering_step = steering_time / (127 / steering_step);
+unsigned long time_between_steering_step = steering_time / (MAX_VALUE / steering_step);
 unsigned long throttle_time = 1000;
-unsigned long time_between_throttle_step = throttle_time / (127 / steering_step);
+unsigned long time_between_throttle_step = throttle_time / (MAX_VALUE / steering_step);
 
 void get_next_steer() {
-    if (state[1] < 128) {
-        state[1] = (state[1] + steering_step) < 128 ? state[1] + steering_step : 127;
+    if (state[1] < (MAX_VALUE + 1)) {
+        state[1] = (state[1] + steering_step) < (MAX_VALUE + 1) ? state[1] + steering_step : MAX_VALUE;
     } else {
-        state[1] = (state[1] + steering_step) < 256 ? state[1] + steering_step : 255;
+        state[1] = (state[1] + steering_step) < ((MAX_VALUE + 1) * 2) ? state[1] + steering_step : (MAX_VALUE*2) + 1;
     }
 }
 
 void get_next_throttle() {
-    if (state[0] < 128) {
+    if (state[0] < (MAX_VALUE + 1)) {
         if (do_throttle) {
             max_throttle = gear * gear_step;
             state[0] = (state[0] + throttle_step) < max_throttle ? state[0] + throttle_step : max_throttle;
@@ -54,7 +58,7 @@ void get_next_throttle() {
         }
     } else {
         if (do_throttle) {
-            max_throttle = (gear * gear_step) + 128;
+            max_throttle = (gear * gear_step) + (MAX_VALUE + 1);
             state[0] = (state[0] + throttle_step) < max_throttle ? state[0] + throttle_step : max_throttle;
         } else {
             if (throttle_history >= throttle_step) {
@@ -88,7 +92,7 @@ void loop() {
             state[0] = throttle_history;
             do_throttle = true;
         } else if (data == 's') {
-            state[0] = 128;
+            state[0] = MAX_VALUE + 1;
             do_throttle = true;
         } else if (data == 'd') {
             steer_key = data;
@@ -96,7 +100,7 @@ void loop() {
             do_steer = true;
         } else if (data == 'q') {
             steer_key = data;
-            state[1] = 128;
+            state[1] = MAX_VALUE + 1;
             do_steer = true;
         } else if (data == 't') {
             state[0] = 0;
@@ -130,6 +134,14 @@ void loop() {
                     state[0] -= gear_step;
                 }
             }
+        } else if (data == 'a') {
+            throttle_time -= throttle_time_step;
+            if (throttle_time < MIN_THROTTLE_TIME)
+                throttle_time = MIN_THROTTLE_TIME;
+            time_between_throttle_step = throttle_time / (MAX_VALUE / steering_step);
+        } else if (data == 'e') {
+            throttle_time += throttle_time_step;
+            time_between_throttle_step = throttle_time / (MAX_VALUE / steering_step);
         } else if (data == 'l') {
             if (steering_trim >= 10) {
                 steering_trim -= 2;
@@ -157,6 +169,8 @@ void loop() {
     Serial.print(",");
     Serial.print(steering_trim);
     Serial.print(",");
-    Serial.println(gear);
+    Serial.print(gear);
+    Serial.print(",");
+    Serial.println(throttle_time);
     delay(4);
 }
