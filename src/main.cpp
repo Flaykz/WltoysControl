@@ -9,6 +9,7 @@
 #define MAX_VALUE 127 // 0-127 and 128-255 on each canal
 #define RESOLUTION (MAX_VALUE + 1)
 #define MIN_THROTTLE_TIME 800 // min time in ms to get full throttle
+#define DEFAULT_THROTTLE_TIME 1600 // min time in ms to get full throttle
 #define MAX_STEERING_TIME 200 // time to get full steering
 #define GEAR_STEP 9 // resolution of gear, number max of gear depend on this value (with 1, you get 127 gear)
 #define MAX_GEAR (MAX_VALUE / GEAR_STEP)
@@ -43,7 +44,7 @@ uint8_t steering_trim = DEFAULT_STEERING_TRIM; // default steering trim (without
 uint32_t prev_steering_time = 0;
 uint32_t time_between_steering_step = MAX_STEERING_TIME / (MAX_VALUE / STEERING_STEP);
 
-uint32_t throttle_time = MIN_THROTTLE_TIME; // time to get full throttle
+uint32_t throttle_time = DEFAULT_THROTTLE_TIME; // time to get full throttle
 uint32_t prev_throttle_time = 0;
 uint32_t time_between_throttle_step = throttle_time / (MAX_VALUE / STEERING_STEP);
 
