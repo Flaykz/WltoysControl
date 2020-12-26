@@ -7,6 +7,7 @@ from pynput.keyboard import Listener
 prev_steering_key = None
 serialPort = serial.Serial(port="COM3", baudrate=115200, bytesize=8, timeout=2, stopbits=serial.STOPBITS_ONE)
 PREV_KEY = None
+time_between_serial_print = 100
 
 
 def on_press(key):
@@ -49,11 +50,11 @@ def on_press(key):
         print(key)
         return
     if key == "a":
-        serialPort.write("a".encode())
+        serialPort.write(key.encode())
         print(key)
         return
     if key == "e":
-        serialPort.write("e".encode())
+        serialPort.write(key.encode())
         print(key)
         return
     if key == "Key.up":
@@ -134,7 +135,7 @@ def f_b():
         if exitProgram:
             break
         bytes_to_read = serialPort.inWaiting()
-        if bytes_to_read and (int(round(time.time() * 1000)) - prev_time > 100):
+        if bytes_to_read and (int(round(time.time() * 1000)) - prev_time > time_between_serial_print):
             bloc = serialPort.read(bytes_to_read)
             last = bloc.decode("utf-8") .split("\n").pop(0)
             print(last)
